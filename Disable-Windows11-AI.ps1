@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Windows 11 Yapay Zeka (AI) ve RAM Tüketen Bileşenleri Devre Dışı Bırakma Scripti
 .DESCRIPTION
@@ -20,6 +20,8 @@ param(
 
 # PowerShell sürümü ve Karakter Kodlaması Ayarları
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "Windows 11 AI & RAM Optimizasyon Aracı"
 
 # Yönetici Yetkisi Kontrolü ve Otomatik Yükseltme

@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Windows 11 Yapay Zeka (AI) ve Bileşenleri Yeniden Etkinleştirme (Geri Alma) Scripti
 .DESCRIPTION
@@ -11,6 +11,8 @@
 #>
 
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+$OutputEncoding           = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "Windows 11 AI Geri Yükleme (Enable) Aracı"
 
 # Yönetici Yetkisi Kontrolü
