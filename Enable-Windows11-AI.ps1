@@ -41,6 +41,19 @@ function Remove-RegValue {
     } catch {}
 }
 
+function Set-RegDword {
+    param([string]$Path, [string]$Name, [int]$Value)
+    try {
+        if (-not (Test-Path $Path)) {
+            New-Item -Path $Path -Force | Out-Null
+        }
+        New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 function Restore-Copilot {
     Write-Host "`n>>> Copilot Ayarları Varsayılana Döndürülüyor..." -ForegroundColor Cyan
 
@@ -54,9 +67,9 @@ function Restore-Copilot {
     Remove-RegValue -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\WindowsCopilot" -Name "AllowCopilotRuntime"
     Remove-RegValue -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Appx\RemoveDefaultMicrosoftStorePackages" -Name "Enabled"
 
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowCopilotButton" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\Shell\Copilot\BingChat" -Name "IsUserEligible" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\Shell\Copilot" -Name "IsCopilotAvailable" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-RegDword -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowCopilotButton" -Value 1
+    Set-RegDword -Path "HKCU:\Software\Microsoft\Windows\Shell\Copilot\BingChat" -Name "IsUserEligible" -Value 1
+    Set-RegDword -Path "HKCU:\Software\Microsoft\Windows\Shell\Copilot" -Name "IsCopilotAvailable" -Value 1
 
     Write-Host "[+] Copilot ilkeleri sıfırlandı. (Uygulama silindiyse Microsoft Store'dan tekrar yüklenebilir)." -ForegroundColor Green
 }
@@ -90,7 +103,7 @@ function Restore-Widgets {
 
     Remove-RegValue -Path "HKLM:\SOFTWARE\Policies\Microsoft\Dsh" -Name "AllowNewsAndInterests"
     Remove-RegValue -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds" -Name "EnableFeeds"
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-RegDword -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value 1
 
     Write-Host "[+] Widgets ilkeleri sıfırlandı. (Paket silindiyse Microsoft Store'dan 'Windows Web Deneyimi Paketi' aranıp yüklenebilir)." -ForegroundColor Green
 }
@@ -134,7 +147,7 @@ function Restore-Services {
         Set-Service -Name $_.Name -StartupType Manual -ErrorAction SilentlyContinue
     }
 
-    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\IsoEnvBroker" -Name "Start" -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue | Out-Null
+    Set-RegDword -Path "HKLM:\SYSTEM\CurrentControlSet\Services\IsoEnvBroker" -Name "Start" -Value 3
 
     # Telemetri ve Çizim / Yazma Ayarları
     Remove-RegValue -Path "HKCU:\Software\Microsoft\input\Settings" -Name "InsightsEnabled"

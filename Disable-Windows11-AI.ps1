@@ -13,6 +13,11 @@
     Yönetici (Administrator) yetkileri ile çalıştırılmalıdır.
 #>
 
+param(
+    [switch]$Silent,
+    [switch]$All
+)
+
 # PowerShell sürümü ve Karakter Kodlaması Ayarları
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 $Host.UI.RawUI.WindowTitle = "Windows 11 AI & RAM Optimizasyon Aracı"
@@ -21,7 +26,10 @@ $Host.UI.RawUI.WindowTitle = "Windows 11 AI & RAM Optimizasyon Aracı"
 $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $isAdmin) {
     Write-Host "[!] Bu script yönetici yetkileri gerektirir. Yönetici olarak yeniden başlatılıyor..." -ForegroundColor Yellow
-    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
+    $argList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+    if ($Silent) { $argList += " -Silent" }
+    if ($All) { $argList += " -All" }
+    Start-Process powershell.exe -ArgumentList $argList -Verb RunAs
     exit
 }
 
@@ -45,7 +53,7 @@ function Set-RegDword {
         if (-not (Test-Path $Path)) {
             New-Item -Path $Path -Force | Out-Null
         }
-        Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type DWord -Force | Out-Null
+        New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
         return $true
     } catch {
         return $false
@@ -58,7 +66,7 @@ function Set-RegString {
         if (-not (Test-Path $Path)) {
             New-Item -Path $Path -Force | Out-Null
         }
-        Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type String -Force | Out-Null
+        New-ItemProperty -Path $Path -Name $Name -Value $Value -PropertyType String -Force -ErrorAction SilentlyContinue | Out-Null
         return $true
     } catch {
         return $false
@@ -128,7 +136,7 @@ function Disable-Copilot {
             Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue | Out-Null
         }
         Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like $pkg } | ForEach-Object {
-            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -AllUsers -ErrorAction SilentlyContinue | Out-Null
+            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
         }
     }
 
@@ -160,15 +168,8 @@ function Disable-Recall-And-AI {
 
     # İsteğe Bağlı Özellik Olan Recall'ı DISM ile Kaldırma
     try {
-        $recallFeature = Get-WindowsOptionalFeature -Online -FeatureName "Recall" -ErrorAction SilentlyContinue
-        if ($recallFeature -and $recallFeature.State -ne "DisabledWithPayloadRemoved") {
-            Write-Host "   [-] Windows Recall isteğe bağlı özelliği sistemden kaldırılıyor..." -ForegroundColor Yellow
-            Disable-WindowsOptionalFeature -Online -FeatureName "Recall" -Remove -NoRestart -ErrorAction SilentlyContinue | Out-Null
-        }
-    } catch {
-        # DISM Komut Satırı Alternatifi
         dism.exe /Online /Disable-Feature /FeatureName:Recall /Remove /NoRestart /Quiet 2>$null | Out-Null
-    }
+    } catch {}
 
     # Copilot+ PC AI Bileşen Paketleri
     $aiWorkloadPackages = @(
@@ -185,7 +186,7 @@ function Disable-Recall-And-AI {
             Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue | Out-Null
         }
         Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like $pkg } | ForEach-Object {
-            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -AllUsers -ErrorAction SilentlyContinue | Out-Null
+            Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
         }
     }
 
@@ -214,7 +215,7 @@ function Uninstall-WebExperience {
         Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue | Out-Null
     }
     Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like "*WebExperience*" } | ForEach-Object {
-        Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -AllUsers -ErrorAction SilentlyContinue | Out-Null
+        Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null
     }
     Write-Host "[+] WebExperience paketi kaldırıldı." -ForegroundColor Green
 }
@@ -256,7 +257,7 @@ function Disable-Edge-AI {
         @{ Name = "DiscoverPageContextEnabled"; Value = 0 },
         @{ Name = "ComposeInlineEnabled"; Value = 0 },
         @{ Name = "AIGenThemesEnabled"; Value = 0 },
-        @{ Name = "GenAILocalFoundationalModelSettings"; Value = 1 }, # 1: Yerel modelleri kapatır
+        @{ Name = "GenAILocalFoundationalModelSettings"; Value = 1 },
         @{ Name = "BuiltInAIAPIsEnabled"; Value = 0 },
         @{ Name = "EdgeHistoryAISearchEnabled"; Value = 0 },
         @{ Name = "ShareBrowsingHistoryWithCopilotSearchAllowed"; Value = 0 },
@@ -372,12 +373,7 @@ function Run-All-Optimizations {
     Write-Host "yeniden başlatmanız tavsiye edilir.`n" -ForegroundColor Yellow
 }
 
-# --- MENÜ SİSTEMİ ---
-param(
-    [switch]$Silent,
-    [switch]$All
-)
-
+# --- ÇALIŞTIRMA MANTIĞI ---
 if ($Silent -or $All) {
     Print-Header
     Run-All-Optimizations -removeWebExp $true
